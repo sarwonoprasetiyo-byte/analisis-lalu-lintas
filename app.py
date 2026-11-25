@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from analisis_data import (
@@ -16,10 +17,13 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Analisis Volume Lalu Lintas")
-st.write("Data kendaraan arah Utara dan Selatan selama 24 jam.")
+st.title("🚦 Analisis Volume Lalu Lintas")
+st.write(
+    "Website untuk melihat volume kendaraan berdasarkan jam dan arah "
+    "Utara–Selatan."
+)
 
-# Mengolah data dari program Python
+# Memproses data
 data_valid = baca_data(df.copy())
 hasil = hitung_volume(data_valid)
 rekap_arah = rekap_per_arah(hasil)
@@ -29,21 +33,30 @@ persentase = hitung_persentase(hasil)
 total_kendaraan = int(hasil["total"].sum())
 jam_puncak = rekap_jam.loc[rekap_jam["total"].idxmax()]
 
-# Ringkasan
-k1, k2, k3 = st.columns(3)
+# Ringkasan utama
+kolom1, kolom2, kolom3 = st.columns(3)
 
-k1.metric("Total kendaraan", f"{total_kendaraan:,}")
-k2.metric("Jam puncak", f"{int(jam_puncak['jam']):02d}.00")
-k3.metric(
-    "Volume jam puncak",
+kolom1.metric(
+    "Total kendaraan",
+    f"{total_kendaraan:,}"
+)
+
+kolom2.metric(
+    "Jam puncak",
+    f"{int(jam_puncak['jam']):02d}.00–"
+    f"{int(jam_puncak['jam']):02d}.59"
+)
+
+kolom3.metric(
+    "Volume pada jam puncak",
     f"{int(jam_puncak['total']):,} kendaraan/jam"
 )
 
 st.divider()
 
-# Pilihan tabel
+# Pilihan tampilan
 pilihan = st.selectbox(
-    "Pilih data yang ingin ditampilkan",
+    "Pilih tampilan data",
     [
         "Rekap per jam",
         "Rekap per arah",
@@ -53,19 +66,17 @@ pilihan = st.selectbox(
 )
 
 if pilihan == "Rekap per jam":
-    st.subheader("Rekap Volume per Jam")
+    st.subheader("Rekap Volume Kendaraan per Jam")
     st.dataframe(rekap_jam, use_container_width=True)
 
 elif pilihan == "Rekap per arah":
-    st.subheader("Rekap Volume per Arah")
+    st.subheader("Rekap Volume Kendaraan per Arah")
     st.dataframe(rekap_arah, use_container_width=True)
 
 elif pilihan == "Persentase jenis kendaraan":
     st.subheader("Persentase Jenis Kendaraan")
-    st.dataframe(
-        persentase.rename("Persentase (%)").to_frame(),
-        use_container_width=True
-    )
+    tabel_persen = persentase.rename("Persentase (%)").to_frame()
+    st.dataframe(tabel_persen, use_container_width=True)
 
 else:
     st.subheader("Data Lengkap")
@@ -73,19 +84,24 @@ else:
 
 st.divider()
 
-# Grafik volume gabungan
+# Grafik gabungan per jam
 st.subheader("Grafik Volume Lalu Lintas Gabungan")
 
 fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(rekap_jam["jam"], rekap_jam["total"], marker="o")
+ax.plot(
+    rekap_jam["jam"],
+    rekap_jam["total"],
+    marker="o"
+)
 ax.set_xlabel("Jam")
 ax.set_ylabel("Kendaraan per jam")
 ax.set_xticks(range(24))
 ax.grid(True, alpha=0.3)
+
 st.pyplot(fig)
 
 # Grafik per arah
-st.subheader("Perbandingan Arah Utara dan Selatan")
+st.subheader("Perbandingan Volume Arah Utara dan Selatan")
 
 pivot = hasil.pivot(
     index="jam",
@@ -108,18 +124,22 @@ ax2.set_ylabel("Kendaraan per jam")
 ax2.set_xticks(range(24))
 ax2.grid(True, alpha=0.3)
 ax2.legend()
+
 st.pyplot(fig2)
 
-# Tombol unduh CSV
-st.subheader("Unduh Data Hasil")
+# Unduh data hasil
+st.subheader("Unduh Hasil Analisis")
 
-csv_data = hasil.to_csv(index=False).encode("utf-8-sig")
+csv_hasil = hasil.to_csv(index=False).encode("utf-8-sig")
 
 st.download_button(
     label="Unduh data lengkap (CSV)",
-    data=csv_data,
+    data=csv_hasil,
     file_name="data_volume_lalu_lintas.csv",
     mime="text/csv"
 )
 
-st.success("Analisis volume lalu lintas berhasil ditampilkan.")
+st.success(
+    "Analisis selesai. Data yang ditampilkan berasal dari "
+    "program analisis volume lalu lintas."
+)
